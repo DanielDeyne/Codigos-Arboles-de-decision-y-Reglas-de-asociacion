@@ -217,8 +217,8 @@ class Database:
 
         return df
 
-    def obtener_datos_hoteles(self):
-        """Obtener los datos de hoteles desde la base de datos y devolverlos como un DataFrame."""
+    def obtener_datos_comentarios(self):
+        """Obtener los datos de comentarios desde la base de datos y devolverlos como un DataFrame."""
         query = "SELECT * FROM hoteles"
         
         # Ejecutar la consulta

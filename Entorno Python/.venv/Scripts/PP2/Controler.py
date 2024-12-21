@@ -68,13 +68,13 @@ class Controler:
                 return i  # Devuelve el índice del nodo actual como el padre
         return None  # Devuelve None si no tiene padre (caso raíz)
 
-    def entrenar_y_almacenar_arbol(self, X, y, modelo_id, feature_names, class_names):
+    def entrenar_y_almacenar_arbol(self, X, y, modelo_id, feature_names, class_names, max_depth=None, class_weight=None):
         """Entrenar y almacenar el modelo de árbol de decisión."""
         # Preprocesar los datos
         X_transformed, updated_feature_names = self.preprocesar_datos(X, modelo_id, feature_names)
 
         # Entrenar el modelo de árbol de decisión
-        self.modelo_arbol.entrenar(X_transformed, y, updated_feature_names)
+        self.modelo_arbol.entrenar(X_transformed, y, updated_feature_names, max_depth=max_depth, class_weight=class_weight)
         nodos, valores = self.modelo_arbol.obtener_nodos()
 
         # Mapear características y valores de predicción a sus IDs en la base de datos
@@ -144,10 +144,10 @@ class Controler:
         else:
            raise Exception("El modelo no está entrenado")
 
-    def entrenar_y_almacenar_reglas(self, modelo_id, datos, min_support=0.1, min_confidence=0.3):
+    def entrenar_y_almacenar_reglas(self, modelo_id, datos, min_support=0.1, min_confidence=0.3, filtro_support=None, filtro_lift=None):
         """Entrenar y almacenar solo el modelo de reglas de asociación."""
         datos_bool = datos.astype(bool)
-        self.modelo_reglas.entrenar(datos_bool, min_support, min_confidence)
+        self.modelo_reglas.entrenar(datos_bool, min_support, min_confidence, filtro_support=filtro_support, filtro_lift=filtro_lift)
         reglas = self.modelo_reglas.obtener_reglas()
 
         for _, regla in reglas.iterrows():

@@ -15,7 +15,7 @@ modelo_reglas = AssociationRulesModel()
 controlador = Controler(db, modelo_arbol, modelo_reglas)
 # Lógica de creación del modelo
 db.crear_tabla_modelo()
-modelo_id = db.insertar_modelo("Cuarto Modelo", "Se usa el dataset de encuestas para modelo de arboles de decisión", "Daniel")
+modelo_id = db.insertar_modelo("Décimo Modelo", "Se usa el dataset de comentarios emitidos para modelo de reglas de asociación sin val_h y val_llm", "Daniel")
 
 if modo == "arbol" or modo == "ambos":
     # Crear tablas en la base de datos
@@ -23,8 +23,14 @@ if modo == "arbol" or modo == "ambos":
     # Seleccionar el conjunto de datos a usar
     usar_iris = False  # Cambiar a "False" si deseas usar el conjunto de datos de coches de lo contrario "True" para el dataset iris
     usar_transacciones = False  # Cambiar a "True" si deseas usar el conjunto de datos de transacciones de productos
-    usar_encuestas = True  # Cambiar a True para usar el dataset de encuestas_hoteles
-    usar_hoteles = False  # Cambiar a True para usar el dataset de hoteles 
+    usar_encuestas = False  # Cambiar a True para usar el dataset de encuestas_hoteles
+    usar_comentarios = True  # Cambiar a True para usar el dataset de comentarios_hoteles 
+
+    # Definir el valor por defecto para max_depth
+    max_depth = None
+
+    # Definir el valor por defecto para class_weight
+    class_weight = None
 
     if usar_iris:
         # Usar el dataset Iris
@@ -55,10 +61,8 @@ if modo == "arbol" or modo == "ambos":
         datos_encuestas = db.obtener_datos_encuestas()
 
         # Separar características y objetivo
-        X = datos_encuestas.drop(columns=["Q00001", "Q00002", "Q00003", "Q00004", "FrontDesk01[G02Q06]", "FrontDesk01[G02Q07]", "Room01[G03Q09]", "Room01[G03Q10]", 
-                                        "Restaurant01[G05Q15]", "Restaurant01[G05Q16]", "Bar01[G06Q21]", "Bar01[G06Q22]", "Personal01[G06Q002]", "Personal01[G06Q003]",
-                                        "Outdoor01[G08Q25]", "Outdoor01[G08Q24]", "Animation01[G0003]", "Animation01[G0004]", "Animation01[G0005]", "Pool01[G10Q30]",
-                                        "Pool01[G10Q31]", "Suggest01", "idpolo", "dia_del_mes"], axis=1)  # Ajustar según lógica de negocio
+        X = datos_encuestas.drop(columns=["Q00001", "Q00002", "Q00003", "Q00004", "Suggest01", "idpolo", "dia_de_semana", "mes",
+                                          "dia_del_mes"], axis=1)  # Ajustar según lógica de negocio
         y = datos_encuestas['Suggest01']  # La variable objetivo
 
         # Nombres de las características y clases
@@ -68,19 +72,24 @@ if modo == "arbol" or modo == "ambos":
         valores_objetivo = y.unique()
 
         # Mapear los valores únicos a sus descripciones
-        mapping_valores = {0: 'Recomendado', 1: 'No Recomendado'}
+        mapping_valores = {0: 'Avala', 1: 'No Avala'}
 
         # Generar class_names a partir de los valores únicos y el mapeo
         class_names = [mapping_valores[val] for val in sorted(valores_objetivo)]
 
-    elif usar_hoteles:
-        # Usar el conjunto de datos de encuestas_hoteles desde la base de datos
-        datos_hoteles = db.obtener_datos_hoteles()
+        # Asignar max_depth específico
+        max_depth = 3
+
+        # Asignar class_weight específico
+        class_weight = "balanced"
+
+    elif usar_comentarios:
+        # Usar el conjunto de datos de comentarios_emitidos desde la base de datos
+        datos_comentarios = db.obtener_datos_comentarios()
 
         # Separar características y objetivo
-        X = datos_hoteles.drop(columns=["val_llm", "val_h", "l_comentario", "polo", "modality", "segment", "resort", "staff", "cuba", "comida", "playa", "great", "bien", "servicio", "always", "todos",
-                                        "amazing", "buffet","excelente"], axis=1) # Ajustar según lógica de negocio
-        y = datos_hoteles['val_h']  # La variable objetivo
+        X = datos_comentarios.drop(columns=["val_h", "polo", "modality", "segment", "dia_de_semana", "dia_del_mes", "val_llm"], axis=1) # Ajustar según lógica de negocio
+        y = datos_comentarios['val_llm']  # Cambiar entre "val_h" y "val_llm" para variable objetivo
 
         # Nombres de las características y clases
         feature_names = X.columns.tolist()  # Nombres de las características
@@ -89,10 +98,16 @@ if modo == "arbol" or modo == "ambos":
         valores_objetivo = y.unique()
 
         # Mapear los valores únicos a sus descripciones
-        mapping_valores = {-1: 'Valoración Negativa', 0: 'Valoración Neutra', 1: 'Valoración Positiva'}
+        mapping_valores = {-1: 'Negativa', 0: 'Neutra', 1: 'Positiva'}
     
         # Generar class_names a partir de los valores únicos y el mapeo
         class_names = [mapping_valores[val] for val in sorted(valores_objetivo)]
+
+        # Asignar max_depth específico
+        max_depth = 3
+
+        # Asignar class_weight específico
+        class_weight = "balanced"
 
     else:
         # Usar el conjunto de datos de coches
@@ -112,15 +127,21 @@ if modo == "arbol" or modo == "ambos":
         class_names = df_coches['Marca'].unique().tolist()  # Obtener los nombres de las clases
 
     controlador.preparar_datos(modelo_id, feature_names, class_names)
-    controlador.entrenar_y_almacenar_arbol(X, y, modelo_id, feature_names, class_names)  # Pasar también los nombres de las clases
+    controlador.entrenar_y_almacenar_arbol(X, y, modelo_id, feature_names, class_names, max_depth=max_depth, class_weight=class_weight)  
 
 if modo == "reglas" or modo == "ambos":
     # Crear tablas en la base de datos
     db.crear_tabla_reglas()
     # Seleccionar el conjunto de datos a usar
     usar_transacciones = False  # Cambiar a "True" si deseas usar el dataset de transacciones de prendas de lo contrario "False" para el dataset de transacciones de productos
-    usar_encuestas = True  # Cambiar a True para usar el dataset de encuestas_hoteles
-    usar_hoteles = False  # Cambiar a True para usar el dataset de hoteles 
+    usar_encuestas = False  # Cambiar a True para usar el dataset de encuestas_hoteles
+    usar_comentarios = True  # Cambiar a True para usar el dataset de comentarios_hoteles
+
+    # Definir el valor por defecto para filtro_support
+    filtro_support=None
+
+    # Definir el valor por defecto para filtro_lift
+    filtro_lift=None
 
     if usar_transacciones:
         datos = pd.DataFrame([
@@ -138,18 +159,25 @@ if modo == "reglas" or modo == "ambos":
         datos_encuestas = db.obtener_datos_encuestas()
 
         # Ignorar columnas 
-        datos_sin_columna_sobrante = datos_encuestas.drop(columns=["Q00001", "Q00002", "Q00003", "Q00004", "FrontDesk01[G02Q06]", "FrontDesk01[G02Q07]", "Room01[G03Q09]", "Room01[G03Q10]", 
-                                                                   "Restaurant01[G05Q15]", "Restaurant01[G05Q16]", "Bar01[G06Q21]", "Bar01[G06Q22]", "Personal01[G06Q002]", "Personal01[G06Q003]",
-                                                                   "Outdoor01[G08Q25]", "Outdoor01[G08Q24]", "Animation01[G0003]", "Animation01[G0004]", "Animation01[G0005]", "Pool01[G10Q30]",
-                                                                   "Pool01[G10Q31]", "Suggest01", "idpolo", "dia_de_semana", "mes", "dia_del_mes"], axis=1) # Ajustar según lógica de negocio 
+        datos_sin_columna_sobrante = datos_encuestas.drop(columns=["Q00001", "Q00002", "Q00003", "Q00004", "FrontDesk01[G02Q06]","FrontDesk01[G02Q07]", "Room01[G03Q09]", 
+                                                                "Room01[G03Q10]", "Restaurant01[G05Q15]", "Restaurant01[G05Q16]","Bar01[G06Q21]", "Bar01[G06Q22]", 
+                                                                "Personal01[G06Q002]","Personal01[G06Q003]", "Outdoor01[G08Q25]","Outdoor01[G08Q24]", "Animation01[G0003]",
+                                                                "Animation01[G0004]", "Animation01[G0005]", "Pool01[G10Q30]", "Pool01[G10Q31]","Suggest01", "idpolo", 
+                                                                "dia_de_semana", "mes", "dia_del_mes"], axis=1)  
+        
+        # Asignar filtro_support específico
+        filtro_support = 0.1
 
-    elif usar_hoteles:
+    elif usar_comentarios:
         # Usar el conjunto de datos de encuestas_hoteles desde la base de datos
-        datos_hoteles = db.obtener_datos_hoteles()
+        datos_comentarios = db.obtener_datos_comentarios()
 
         # Ignorar columnas  
-        datos_sin_columna_sobrante  = datos_hoteles.drop(columns=["val_llm", "val_h", "l_comentario", "polo", "modality", "segment", "resort", "staff", "cuba", "comida", "playa", "great", "bien", "servicio", "always", "todos",
-                                     "amazing", "buffet","excelente"], axis=1) # Ajustar según lógica de negocio  
+        datos_sin_columna_sobrante  = datos_comentarios.drop(columns=["l_comentario", "polo", "modality", "segment", "dia_de_semana", "mes", "dia_del_mes", "val_h", "val_llm"], 
+                                                                  axis=1) # Con y sin: "val_h" y "val_llm" 
+        
+        # Asignar filtro_support específico
+        filtro_support = 0.1
 
     else:
         datos = pd.DataFrame([
@@ -163,7 +191,7 @@ if modo == "reglas" or modo == "ambos":
         datos_sin_columna_sobrante = datos.drop('comprador', axis=1)
 
     #db.crear_tabla_reglas()
-    controlador.entrenar_y_almacenar_reglas(modelo_id, datos_sin_columna_sobrante)
+    controlador.entrenar_y_almacenar_reglas(modelo_id, datos_sin_columna_sobrante, filtro_support=filtro_support, filtro_lift=filtro_lift)
 
 # Cerrar la conexión a la base de datos
 db.cerrar_conexion()
