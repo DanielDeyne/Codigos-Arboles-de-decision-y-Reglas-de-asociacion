@@ -6,7 +6,7 @@ from sklearn.datasets import load_iris
 import pandas as pd
 
 # Configuración de modo de ejecución: Cambia el valor de 'modo' para ejecutar solo el árbol, solo reglas o ambos
-modo = "reglas"  # "arbol", "reglas" o "ambos"
+modo = "arbol"  # "arbol", "reglas" o "ambos"
 
 # Inicializar base de datos  y modelos
 db = Database(database="prueba", user="postgres", password="RealMadridVenom")
@@ -15,16 +15,16 @@ modelo_reglas = AssociationRulesModel()
 controlador = Controler(db, modelo_arbol, modelo_reglas)
 # Lógica de creación del modelo
 db.crear_tabla_modelo()
-modelo_id = db.insertar_modelo("Décimo Modelo", "Se usa el dataset de comentarios emitidos para modelo de reglas de asociación sin val_h y val_llm", "Daniel")
+modelo_id = db.insertar_modelo("Undécimo Modelo", "Se usa el dataset iris para modelo de árboles de decisión sin sepal width (cm) y petal width (cm)", "Daniel")
 
 if modo == "arbol" or modo == "ambos":
     # Crear tablas en la base de datos
     db.crear_tablas()
     # Seleccionar el conjunto de datos a usar
-    usar_iris = False  # Cambiar a "False" si deseas usar el conjunto de datos de coches de lo contrario "True" para el dataset iris
+    usar_iris = True  # Cambiar a "False" si deseas usar el conjunto de datos de coches de lo contrario "True" para el dataset iris
     usar_transacciones = False  # Cambiar a "True" si deseas usar el conjunto de datos de transacciones de productos
     usar_encuestas = False  # Cambiar a True para usar el dataset de encuestas_hoteles
-    usar_comentarios = True  # Cambiar a True para usar el dataset de comentarios_hoteles 
+    usar_comentarios = False  # Cambiar a True para usar el dataset de comentarios_hoteles 
 
     # Definir el valor por defecto para max_depth
     max_depth = None
@@ -38,6 +38,27 @@ if modo == "arbol" or modo == "ambos":
         X, y = iris.data, iris.target
         feature_names = iris.feature_names  # Obtener los nombres de las características
         class_names = iris.target_names  # Obtener los nombres de las clases
+
+        # Convertir X en un DataFrame de pandas para facilitar el manejo
+        X_df = pd.DataFrame(X, columns=feature_names)
+
+        # Lista de columnas a eliminar
+        columnas_a_eliminar = ['sepal width (cm)', 'petal width (cm)']  # Cambiar esta lista según lo que se desee eliminar: "sepal length (cm)", "sepal width (cm)",
+                                                                                                                           # "petal length (cm)", "petal width (cm)"
+
+        # Eliminar columnas solo si la lista no está vacía
+        if columnas_a_eliminar:
+            X_df = X_df.drop(columns=columnas_a_eliminar)
+
+        # Actualizar X y feature_names
+        X = X_df.values
+        feature_names = X_df.columns.tolist()  # Nombres de características actualizados
+
+        # Asignar max_depth específico
+        max_depth = 5
+
+        # Asignar class_weight específico
+        class_weight = "balanced"
 
     elif usar_transacciones:
         # Usar el conjunto de datos de transacciones de productos
