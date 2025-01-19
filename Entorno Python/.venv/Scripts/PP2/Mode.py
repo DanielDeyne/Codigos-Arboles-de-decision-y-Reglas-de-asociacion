@@ -15,7 +15,7 @@ modelo_reglas = AssociationRulesModel()
 controlador = Controler(db, modelo_arbol, modelo_reglas)
 # Lógica de creación del modelo
 db.crear_tabla_modelo()
-modelo_id = db.insertar_modelo("Undécimo Modelo", "Se usa el dataset iris para modelo de árboles de decisión sin sepal width (cm) y petal width (cm)", "Daniel")
+modelo_id = db.insertar_modelo("Iris (sepal length (cm) y petal length (cm))", "Se usa el dataset iris para modelo de árboles de decisión sin sepal width (cm) y petal width (cm)", "Daniel")
 
 if modo == "arbol" or modo == "ambos":
     # Crear tablas en la base de datos
@@ -186,6 +186,16 @@ if modo == "reglas" or modo == "ambos":
                                                                 "Animation01[G0004]", "Animation01[G0005]", "Pool01[G10Q30]", "Pool01[G10Q31]","Suggest01", "idpolo", 
                                                                 "dia_de_semana", "mes", "dia_del_mes"], axis=1)  
         
+        # Preprocesar columnas de valoraciones
+        columnas_valoracion = ["FrontDesk01[G02Q05]", "Room01[G03Q08]", "Restaurant01[G05Q14]", "Bar01[G06Q20]", "Personal01[G06Q001]", "Outdoor01[G08Q23]",
+                               "Animation01[G0901]", "Pool01[G10Q29]"]  # Añade todas las columnas relevantes
+        
+        for columna in columnas_valoracion:
+            datos_sin_columna_sobrante[f"{columna}_Pos"] = (datos_sin_columna_sobrante[columna] == 1).astype(int)
+            datos_sin_columna_sobrante[f"{columna}_Neu"] = (datos_sin_columna_sobrante[columna] == 0).astype(int)
+            datos_sin_columna_sobrante[f"{columna}_Neg"] = (datos_sin_columna_sobrante[columna] == -1).astype(int)
+            datos_sin_columna_sobrante.drop(columns=[columna], inplace=True)
+        
         # Asignar filtro_support específico
         filtro_support = 0.1
 
@@ -197,6 +207,16 @@ if modo == "reglas" or modo == "ambos":
         datos_sin_columna_sobrante  = datos_comentarios.drop(columns=["l_comentario", "polo", "modality", "segment", "dia_de_semana", "mes", "dia_del_mes", "val_h", "val_llm"], 
                                                                   axis=1) # Con y sin: "val_h" y "val_llm" 
         
+        # Verificar si las columnas de valoración están presentes antes de procesarlas
+        columnas_valoracion = ["val_h", "val_llm"]
+        if all(col in datos_sin_columna_sobrante.columns for col in columnas_valoracion):
+            # Preprocesar columnas de valoraciones
+            for columna in columnas_valoracion:
+                datos_sin_columna_sobrante[f"{columna}_Pos"] = (datos_sin_columna_sobrante[columna] == 1).astype(int)
+                datos_sin_columna_sobrante[f"{columna}_Neu"] = (datos_sin_columna_sobrante[columna] == 0).astype(int)
+                datos_sin_columna_sobrante[f"{columna}_Neg"] = (datos_sin_columna_sobrante[columna] == -1).astype(int)
+                datos_sin_columna_sobrante.drop(columns=[columna], inplace=True)
+
         # Asignar filtro_support específico
         filtro_support = 0.1
 
