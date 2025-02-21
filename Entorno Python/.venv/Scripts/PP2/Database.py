@@ -23,7 +23,6 @@ class Database:
         self.cursor.execute(query_modelo)
         self.conn.commit()
         
-
     def insertar_modelo(self, nombre, descripcion, creador):
         """Inserta un modelo en la tabla 'grafana_ml_model_index' y devuelve su ID."""
         query = """
