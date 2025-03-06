@@ -18,8 +18,7 @@ class Controler:
             self.base_datos.insertar_caracteristica(modelo_id, feature)
 
         for clase in class_names:
-            self.base_datos.insertar_valor_prediccion(modelo_id, clase)
-            
+            self.base_datos.insertar_valor_prediccion(modelo_id, clase)            
 
     def preprocesar_datos(self, X, modelo_id, feature_names):
         """Convierte características categóricas en numéricas si es necesario."""
